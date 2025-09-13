@@ -8,83 +8,66 @@ import (
 	"strings"
 )
 
-func ParseInput(filename string) (*Colony, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
+func ParseInput(inputFile string, colony *Colony) (bool, string) {
+	hasProcessedFirstLine := false
+	inputData, openErr := os.Open(inputFile)
+	if openErr != nil {
+		fmt.Println("ERROR: unable to open file", openErr)
+		os.Exit(1)
 	}
-	defer file.Close()
+	defer inputData.Close()
 
-	colony := &Colony{}
-
-	scanner := bufio.NewScanner(file)
-	lineIndex := 0
-	nextRoomIsStart := false
-	nextRoomIsEnd := false
+	fileContent := ""
+	currentLineNumber := 0
+	scanner := bufio.NewScanner(inputData)
+	isStart := false
+	isEnd := false
+	totalAnts := 0
+	startRoomDefined := false
+	endRoomDefined := false
 
 	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		colony.Input = append(colony.Input, line)
+		currentLine := scanner.Text()
+		fileContent += currentLine + "\n"
+		currentLineNumber++
 
-		if line == "" {
-			continue
-		}
-
-		if line == "##start" {
-			nextRoomIsStart = true
-			continue
-		}
-		if line == "##end" {
-			nextRoomIsEnd = true
-			continue
-		}
-
-		// Skip other comments if exist
-		if strings.HasPrefix(line, "#") {
-			continue
-		}
-
-		// First line must be the number of ants
-		if lineIndex == 0 {
-			AntsNum, err := strconv.Atoi(line)
-			if err != nil || AntsNum <= 0 {
-				return nil, fmt.Errorf("ERROR: Invalid number of ants: %s", line)
+		// Process comments and special directives
+		if strings.HasPrefix(currentLine, "#") {
+			if currentLine == "##start" {
+				if startRoomDefined {
+					fmt.Printf("ERROR: invalid data format, multiple start rooms defined (%s)\n", currentLine)
+					os.Exit(1)
+				}
+				startRoomDefined = true
+				isStart = true
+				continue
+			} else if currentLine == "##end" {
+				if endRoomDefined {
+					fmt.Printf("ERROR: invalid data format, multiple end rooms defined (%s)\n", currentLine)
+					os.Exit(1)
+				}
+				endRoomDefined = true
+				isEnd = true
+				continue
+			} else {
+				continue
 			}
-			colony.AntsNum = AntsNum
-			lineIndex++
+		}
+
+		// Parse initial line (ant count)
+		if !hasProcessedFirstLine {
+			lineComponents := strings.Fields(currentLine)
+			if len(lineComponents) != 1 {
+				fmt.Printf("Invalid data format detected (%s)\n", currentLine)
+				os.Exit(1)
+			}
+			totalAnts, openErr = strconv.Atoi(lineComponents[0])
+			if openErr != nil || totalAnts <= 0 {
+				fmt.Printf("ERROR: invalid data format, invalid number of ants (%s)\n", currentLine)
+				os.Exit(1)
+			}
+			hasProcessedFirstLine = true
 			continue
 		}
 	}
-
-	// Errors returns
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	// if colony.Start == "" {
-	// 	return nil, fmt.Errorf("ERROR: No start room found")
-	// }
-
-	// if colony.End == "" {
-	// 	return nil, fmt.Errorf("ERROR: No end room found")
-	// }
-
-	// if colony.Start == colony.End {
-	// 	return nil, fmt.Errorf("ERROR: Invalid input: start and end rooms are the same")
-	// }
-
-	fmt.Println(colony.AntsNum)
-	fmt.Println(nextRoomIsStart)
-	fmt.Println(nextRoomIsEnd)
-
-	fmt.Println("===========================================")
-
-	return colony, nil
-}
-
-func DisplayColony(colony *Colony) {
-	for _, line := range colony.Input {
-		fmt.Println(line)
-	}
-	fmt.Println()
 }

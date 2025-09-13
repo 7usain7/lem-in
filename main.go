@@ -4,20 +4,18 @@ import (
 	"fmt"
 	"lem-in/funcs"
 	"os"
+	"strings"
 )
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("Usage: go run . <filename>")
+	args := os.Args[1:]
+	if len(args) != 1 {
+		fmt.Println("Usage: go run main.go <File_Name>")
 		return
 	}
-
-	colony, err := funcs.ParseInput(os.Args[1])
-	if err != nil {
-		fmt.Println("ERROR: invalid data format")
+	if !strings.HasSuffix(args[0], ".txt") {
+		fmt.Printf("Error: The file '%s' is not a .txt file.\n", args[0])
 		return
 	}
-
-	// Print test.txt file content
-	funcs.DisplayColony(colony)
+	var colony funcs.Colony
 }
