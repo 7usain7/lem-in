@@ -18,4 +18,13 @@ func main() {
 		return
 	}
 	var colony funcs.Colony
+	colony.Setup()
+
+	fileParse, input := funcs.ParseInput(args[0], &colony)
+	if !fileParse {
+		return
+	}
+
+	fmt.Println(input)
+
 }
