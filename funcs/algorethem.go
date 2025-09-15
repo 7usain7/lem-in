@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"sort"
 )
 
 // Add room to end of search queue
@@ -124,7 +125,7 @@ func (colony *Colony) VerifyColonyIntegrity() bool {
 		return false
 	}
 
-	// Validate coordinate are uniqe
+	// Validate if coordinate are unique
 	if !colony.CheckCoordinateUniqueness() {
 		fmt.Println("ERROR: Duplicate coordinates found")
 		return false
@@ -139,6 +140,94 @@ func (colony *Colony) VerifyColonyIntegrity() bool {
 	return true
 }
 
+// Find the best next room for an ant to move toward
+func (colony *Colony) FindOptimalNextRoom(ant *Ant) *Room {
+	minDistance := math.MaxInt32
+	bestRoom := ant.currentRoom.tunnels.firstNode.data
+
+	tunnel := ant.currentRoom.tunnels.firstNode
+	for tunnel != nil {
+		neighbor := tunnel.data
+		if colony.roomPaths[neighbor] <= minDistance &&
+			!ant.visitedRoom[neighbor] {
+			bestRoom = neighbor
+			minDistance = colony.roomPaths[bestRoom]
+		}
+		tunnel = tunnel.nextConnection
+	}
+	return bestRoom
+}
+
+// Validate if ant is allowed to move to specified room
+func validateAntMovement(ant *Ant, targetRoom *Room) bool {
+	// Ant can move to end room
+	if targetRoom.isEnd {
+		return ant.inMotion && !ant.hasCompletedMove
+	}
+
+	// For non-end rooms, check all conditions
+	return targetRoom.isUnoccupied &&
+		!ant.visitedRoom[targetRoom] &&
+		!targetRoom.isStart &&
+		!ant.currentRoom.accessMap[targetRoom.roomName] &&
+		ant.inMotion &&
+		!ant.hasCompletedMove
+}
+
+// Execute basic ant movement through the colony system
+func (colony *Colony) StartAntMovment() {
+	for _, ant := range colony.ants {
+		if !ant.inMotion || ant.hasCompletedMove {
+			continue
+		}
+
+		nextTarget := colony.FindOptimalNextRoom(ant)
+
+		// Perform movement if conditions are met
+		if validateAntMovement(ant, nextTarget) {
+			// Block tunnel to prevent conflicts
+			ant.currentRoom.accessMap[nextTarget.roomName] = true
+			ant.visitedRoom[ant.currentRoom] = true
+			ant.currentRoom.isUnoccupied = true
+			ant.currentRoom = nextTarget
+			nextTarget.isUnoccupied = false
+
+			// Update ant status if destination reached
+			if ant.currentRoom.isEnd {
+				ant.inMotion = false
+			}
+			ant.hasCompletedMove = true
+		}
+	}
+
+	// Clear access restrictions and recalculate paths
+	colony.ClearTunnelRestrictions()
+	colony.FindBestPath()
+}
+
+// Generate formatted string of current ant locations
+func (colony *Colony) GenerateMovementOutput() string {
+	outputString := ""
+
+	// Create numerically sorted list of ants
+	orderedAnts := make([]*Ant, colony.antCount)
+	copy(orderedAnts, colony.ants)
+
+	// Sort ants by their identification numbers
+	sort.SliceStable(orderedAnts, func(first, second int) bool {
+		return orderedAnts[first].antNumber < orderedAnts[second].antNumber
+	})
+
+	// Format output for ants that completed movement
+	for _, ant := range orderedAnts {
+		if ant.hasCompletedMove {
+			outputString += fmt.Sprintf("L%d-%s ", ant.antNumber, ant.currentRoom.roomName)
+			ant.hasCompletedMove = false
+		}
+	}
+	return outputString + "\n"
+}
+
 // verify if pathfinding did work correctly
 func (colony *Colony) TestPathfinding() {
 	if !colony.VerifyColonyIntegrity() {
@@ -148,14 +237,11 @@ func (colony *Colony) TestPathfinding() {
 
 	colony.startPathFinding()
 
-	// Display path distances for verification
-	fmt.Printf("\nPath distances calculated:\n")
-	fmt.Printf("Start room distance: %d\n", colony.roomPaths[colony.startRoom])
-	fmt.Printf("End room distance: %d\n", colony.roomPaths[colony.endRoom])
-
-	if colony.roomPaths[colony.startRoom] != math.MaxInt32 {
-		fmt.Printf("Path from start to end exists! Length: %d steps\n", colony.roomPaths[colony.startRoom])
-	} else {
-		fmt.Println("No path found from start to end")
+	steps := 0
+	for !colony.CheckAllAntsAtDestination() {
+		steps++
+		colony.StartAntMovment()
+		fmt.Print(colony.GenerateMovementOutput())
 	}
+	fmt.Printf("Steps taken: %d\n", steps)
 }
