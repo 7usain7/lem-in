@@ -13,18 +13,21 @@ func main() {
 		fmt.Println("Usage: go run main.go <File_Name>")
 		return
 	}
+
 	if !strings.HasSuffix(args[0], ".txt") {
 		fmt.Printf("Error: The file '%s' is not a .txt file.\n", args[0])
 		return
 	}
+
 	var colony funcs.Colony
 	colony.Setup()
 
-	fileParse, input := funcs.ParseInput(args[0], &colony)
-	if !fileParse {
+	fileParsed, fileContent := funcs.ParseInput(args[0], &colony)
+	if !fileParsed {
 		return
 	}
 
-	fmt.Println(input)
+	// Display the input file content
+	fmt.Print(fileContent)
 
 }

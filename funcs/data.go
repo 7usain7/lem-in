@@ -37,3 +37,8 @@ type Tunnel struct {
 type TunnelList struct {
 	firstNode *Tunnel
 }
+
+// Queue structure for breadth-first search
+type SearchQueue struct {
+	roomList []*Room
+}

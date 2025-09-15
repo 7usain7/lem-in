@@ -3,12 +3,27 @@ package funcs
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 func (colony *Colony) CreateRoom(name string, roomType string, x int, y int) {
+	// Validate room name format
+	if strings.HasPrefix(name, "L") || strings.HasPrefix(name, "#") || strings.Contains(name, " ") {
+		fmt.Printf("ERROR: invalid data format, invalid room name '%s'\n", name)
+		os.Exit(1)
+	}
+
 	if _, exists := colony.rooms[name]; exists {
 		fmt.Printf("ERROR: invalid data format, duplicate room name '%s'\n", name)
 		os.Exit(1)
+	}
+
+	// Check for duplicate coordinates
+	for _, room := range colony.rooms {
+		if room.xCoord == x && room.yCoord == y {
+			fmt.Printf("ERROR: invalid data format, duplicate coordinates (%d, %d)\n", x, y)
+			os.Exit(1)
+		}
 	}
 
 	newRoom := &Room{
