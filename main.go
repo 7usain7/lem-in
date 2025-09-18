@@ -30,4 +30,6 @@ func main() {
 	// Display the input file content
 	fmt.Print(fileContent)
 
+	// Run the complete pathfinding simulation
+	colony.LaunchPathfindingSimulation()
 }

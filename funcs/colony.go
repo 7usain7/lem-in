@@ -1,5 +1,7 @@
 package funcs
 
+import "math"
+
 func (colony *Colony) SetupAnts(antCount int) {
 	colony.antCount = antCount
 	colony.ants = make([]*Ant, colony.antCount)
@@ -52,9 +54,9 @@ func (colony *Colony) CountProgressiveTunnels(chamber *Room) int {
 	return progressiveCount
 }
 
-// TODO: Initialize path distances for pathfinding algorithm
-// func (colony *Colony) InitializePathDistances() {
-// 	for _, room := range colony.rooms {
-// 		colony.roomPaths[room] = math.MaxInt32
-// 	}
-// }
+// Initialize path distances for pathfinding algorithm
+func (colony *Colony) InitializePathDistances() {
+	for _, room := range colony.rooms {
+		colony.roomPaths[room] = math.MaxInt32
+	}
+}
