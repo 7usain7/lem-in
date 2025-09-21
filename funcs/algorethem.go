@@ -33,12 +33,6 @@ func (colony *Colony) FindBestPath() {
 	colony.roomPaths[colony.endRoom] = 0 // end room should be distance 0
 	foundRooms[colony.endRoom] = true
 
-	// Ensure start room is accessible
-	if !processedRooms[colony.startRoom] {
-		fmt.Println("ERROR: No path exists from start to end")
-		os.Exit(0)
-	}
-
 	for {
 		current := queue.RemoveFromQueue()
 		if current == nil {
@@ -68,6 +62,11 @@ func (colony *Colony) FindBestPath() {
 		processedRooms[current] = true
 	}
 
+	// Check accessibility AFTER BFS completes
+	if !processedRooms[colony.startRoom] {
+		fmt.Println("ERROR: No path exists from start to end")
+		os.Exit(0)
+	}
 }
 
 // Find the best next room for an ant to move toward
@@ -181,6 +180,7 @@ func (colony *Colony) ResetAllAnts() {
 		}
 		colony.ants[i].visitedRoom[colony.startRoom] = false
 		colony.ants[i].inMotion = true
+		colony.ants[i].hasCompletedMove = false
 	}
 	colony.ClearTunnelRestrictions()
 }
