@@ -71,12 +71,22 @@ func (colony *Colony) FindBestPath() {
 
 // Find the best next room for an ant to move toward
 func (colony *Colony) FindOptimalNextRoom(ant *Ant, strictMode bool) *Room {
+	// Ensure ant has a current room with tunnels
+	if ant.currentRoom == nil || ant.currentRoom.tunnels == nil || ant.currentRoom.tunnels.firstNode == nil {
+		return nil
+	}
+
 	minDistance := math.MaxInt32
 	bestRoom := ant.currentRoom.tunnels.firstNode.data
 
 	tunnel := ant.currentRoom.tunnels.firstNode
 	for tunnel != nil {
 		neighbor := tunnel.data
+		if neighbor == nil {
+			tunnel = tunnel.nextConnection
+			continue
+		}
+
 		if strictMode {
 			if colony.roomPaths[neighbor] < minDistance &&
 				!ant.visitedRoom[neighbor] {
@@ -126,6 +136,10 @@ func (colony *Colony) StartAntMovment(optimizationMode bool) {
 
 	for antIdx := 0; antIdx < len(workingAnts); antIdx++ {
 		nextTarget := colony.FindOptimalNextRoom(workingAnts[antIdx], optimizationMode)
+
+		if nextTarget == nil {
+			continue
+		}
 
 		// Adjust path weights for traffic management
 		if nextTarget != colony.endRoom || workingAnts[antIdx].currentRoom.isStart {
