@@ -97,7 +97,7 @@ func (colony *Colony) ConnectRooms(room1Name string, room2Name string) bool {
 	}
 
 	if room1.HasConnectionTo(room2) {
-		fmt.Printf("ERROR: invalid data format. Duplicate connection between rooms")
+		fmt.Printf("ERROR: invalid data format. Duplicate connection between rooms\n")
 		return false
 	}
 

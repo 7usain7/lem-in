@@ -22,36 +22,31 @@ func (queue *SearchQueue) RemoveFromQueue() *Room {
 	return room
 }
 
-// Compute shortest paths from endRoom to all reachable rooms
+// BFS
 func (colony *Colony) FindBestPath() {
 	queue := &SearchQueue{}
 	processedRooms := make(map[*Room]bool)
 	foundRooms := make(map[*Room]bool)
 
-	// Begin BFS from the end room with distance 0
+	// Begin BFS from the end room
 	queue.AddToQueue(colony.endRoom)
-	colony.roomPaths[colony.endRoom] = 0 // end room should be distance 0
-	foundRooms[colony.endRoom] = true
+	current := queue.RemoveFromQueue()
+	colony.roomPaths[current] = 1
+	foundRooms[current] = true
 
-	for {
-		current := queue.RemoveFromQueue()
-		if current == nil {
-			break
-		}
-
+	// Explore all connected rooms
+	for current != nil {
 		tunnel := current.tunnels.firstNode
 		for tunnel != nil {
 			neighbor := tunnel.data
-			newDistance := colony.roomPaths[current] + 1
-
 			if !foundRooms[neighbor] {
-				colony.roomPaths[neighbor] = newDistance
-				foundRooms[neighbor] = true
 				if !neighbor.isStart {
 					queue.AddToQueue(neighbor)
 				}
-			} else if newDistance < colony.roomPaths[neighbor] {
-				colony.roomPaths[neighbor] = newDistance
+				foundRooms[neighbor] = true
+				if colony.roomPaths[current]+1 < colony.roomPaths[neighbor] {
+					colony.roomPaths[neighbor] = colony.roomPaths[current] + 1
+				}
 			}
 
 			if neighbor == colony.startRoom {
@@ -60,9 +55,10 @@ func (colony *Colony) FindBestPath() {
 			tunnel = tunnel.nextConnection
 		}
 		processedRooms[current] = true
+		current = queue.RemoveFromQueue()
 	}
 
-	// Check accessibility AFTER BFS completes
+	// Check if start room is accessible
 	if !processedRooms[colony.startRoom] {
 		fmt.Println("ERROR: No path exists from start to end")
 		os.Exit(0)
@@ -82,20 +78,18 @@ func (colony *Colony) FindOptimalNextRoom(ant *Ant, strictMode bool) *Room {
 	tunnel := ant.currentRoom.tunnels.firstNode
 	for tunnel != nil {
 		neighbor := tunnel.data
-		if neighbor == nil {
+		if neighbor == nil || ant.visitedRoom[neighbor] {
 			tunnel = tunnel.nextConnection
 			continue
 		}
 
 		if strictMode {
-			if colony.roomPaths[neighbor] < minDistance &&
-				!ant.visitedRoom[neighbor] {
+			if colony.roomPaths[neighbor] < minDistance {
 				bestRoom = neighbor
 				minDistance = colony.roomPaths[bestRoom]
 			}
 		} else {
-			if colony.roomPaths[neighbor] <= minDistance &&
-				!ant.visitedRoom[neighbor] {
+			if colony.roomPaths[neighbor] <= minDistance {
 				bestRoom = neighbor
 				minDistance = colony.roomPaths[bestRoom]
 			}
@@ -107,13 +101,7 @@ func (colony *Colony) FindOptimalNextRoom(ant *Ant, strictMode bool) *Room {
 
 // Validate if ant is allowed to move to specified room
 func validateAntMovement(ant *Ant, targetRoom *Room) bool {
-	// Ant can move to end room
-	if targetRoom.isEnd {
-		return ant.inMotion && !ant.hasCompletedMove
-	}
-
-	// For non-end rooms, check all conditions
-	return targetRoom.isUnoccupied &&
+	return (targetRoom.isUnoccupied || targetRoom.isEnd) &&
 		!ant.visitedRoom[targetRoom] &&
 		!targetRoom.isStart &&
 		!ant.currentRoom.accessMap[targetRoom.roomName] &&
@@ -236,7 +224,6 @@ func (colony *Colony) GenerateMovementOutput() string {
 func (colony *Colony) RunOptimizedPathfinding() {
 	basicSteps, advancedSteps := 0, 0
 	basicPath, advancedPath := "", ""
-	stepCounter := 0
 
 	// Execute basic pathfinding approach
 	for !colony.CheckAllAntsAtDestination() {
@@ -248,7 +235,6 @@ func (colony *Colony) RunOptimizedPathfinding() {
 	// Reset and execute optimized approach
 	colony.ResetAllAnts()
 	for !colony.CheckAllAntsAtDestination() {
-		stepCounter++
 		advancedSteps++
 		if advancedSteps > basicSteps {
 			break
@@ -257,7 +243,7 @@ func (colony *Colony) RunOptimizedPathfinding() {
 		advancedPath += colony.GenerateMovementOutput()
 	}
 
-	// Display final result
+	// Display optimal result
 	if basicSteps == advancedSteps {
 		fmt.Printf("\n%s\nSteps taken: %d\n", advancedPath, advancedSteps)
 	} else if basicSteps < advancedSteps {
