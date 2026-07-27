@@ -48,5 +48,9 @@ A Go implementation of a digital ant farm that finds the optimal path for multip
 
 ## Team Members
 
-- Ali Hussain #alimadan
-- Hussain Abdulrasool #habdulras
+- Ali Hussain #Ali-H-M
+- Hussain #7usain7
+
+## License
+
+This project is proprietary. The code is publicly visible for portfolio and viewing purposes only. No unauthorized copying, modification, or distribution is permitted. See [LICENSE](LICENSE) for details.
